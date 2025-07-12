@@ -8,13 +8,12 @@ dynamic = ["version"]
 description = "Python package for differentiable rasterization of gaussians"
 readme = "README.md"
 license = {text = "Apache-2.0"}
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 keywords = ["gaussian", "splatting", "cuda"]
 dependencies = [
     "torch",
     "jaxtyping", 
-    "rich>=12",
-    "typing_extensions; python_version<'3.8'"
+    "rich>=12"
 ]
 
 [project.optional-dependencies]
