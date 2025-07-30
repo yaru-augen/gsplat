@@ -1,11 +1,12 @@
 """Python bindings for SH"""
 
-import gsplat.cuda as _C
+from typing import Literal
 
 from jaxtyping import Float
 from torch import Tensor
 from torch.autograd import Function
-from typing import Literal
+
+import gsplat.cuda as _C
 
 
 def num_sh_bases(degree: int):
@@ -84,7 +85,12 @@ class _SphericalHarmonics(Function):
         ctx.method = method
         ctx.save_for_backward(viewdirs)
         return _C.compute_sh_forward(
-            method, num_points, degree, degrees_to_use, viewdirs, coeffs
+            method,
+            num_points,
+            degree,
+            degrees_to_use,
+            viewdirs.contiguous().float(),
+            coeffs.contiguous().float(),
         )
 
     @staticmethod
@@ -99,6 +105,11 @@ class _SphericalHarmonics(Function):
             None,
             None,
             _C.compute_sh_backward(
-                method, num_points, degree, degrees_to_use, viewdirs, v_colors
+                method,
+                num_points,
+                degree,
+                degrees_to_use,
+                viewdirs.contiguous().float(),
+                v_colors.contiguous().float(),
             ),
         )

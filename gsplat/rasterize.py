@@ -140,8 +140,12 @@ class _RasterizeGaussians(Function):
             )
             gaussian_ids_sorted = torch.zeros(0, 1, device=xys.device)
             tile_bins = torch.zeros(0, 2, device=xys.device)
-            final_Ts = torch.zeros(img_height, img_width, blur_samples, device=xys.device)
-            final_idx = torch.zeros(img_height, img_width, blur_samples, device=xys.device)
+            final_Ts = torch.zeros(
+                img_height, img_width, blur_samples, device=xys.device
+            )
+            final_idx = torch.zeros(
+                img_height, img_width, blur_samples, device=xys.device
+            )
         else:
             (
                 isect_ids_unsorted,
@@ -171,14 +175,14 @@ class _RasterizeGaussians(Function):
                 blur_samples,
                 gaussian_ids_sorted,
                 tile_bins,
-                xys,
-                pix_vels,
+                xys.contiguous().float(),
+                pix_vels.contiguous().float(),
                 rolling_shutter_time,
                 exposure_time,
-                conics,
-                colors,
-                opacity,
-                background,
+                conics.contiguous().float(),
+                colors.contiguous().float(),
+                opacity.contiguous().float(),
+                background.contiguous().float() if background is not None else None,
             )
 
         ctx.img_width = img_width
@@ -250,14 +254,14 @@ class _RasterizeGaussians(Function):
                 blur_samples,
                 gaussian_ids_sorted,
                 tile_bins,
-                xys,
-                pix_vels,
+                xys.contiguous().float(),
+                pix_vels.contiguous().float(),
                 ctx.rolling_shutter_time,
                 ctx.exposure_time,
-                conics,
-                colors,
-                opacity,
-                background,
+                conics.contiguous().float(),
+                colors.contiguous().float(),
+                opacity.contiguous().float(),
+                background.contiguous().float() if background is not None else None,
                 final_Ts,
                 final_idx,
                 v_out_img,
@@ -266,7 +270,8 @@ class _RasterizeGaussians(Function):
         v_background = None
         if background.requires_grad:
             v_background = torch.matmul(
-                v_out_img.float().view(-1, 3).t(), final_Ts.mean(dim=-1).float().view(-1, 1)
+                v_out_img.float().view(-1, 3).t(),
+                final_Ts.mean(dim=-1).float().view(-1, 1),
             ).squeeze()
 
         # Abs grad for gaussian splitting criterion. See
@@ -277,7 +282,7 @@ class _RasterizeGaussians(Function):
         return (
             v_xy,  # xys
             None,  # depths
-            v_pix_vels, # pix vels
+            v_pix_vels,  # pix vels
             None,  # radii
             v_conic,  # conics
             None,  # num_tiles_hit
@@ -288,7 +293,7 @@ class _RasterizeGaussians(Function):
             None,  # block_width
             v_background,  # background
             None,  # return_alpha
-            None, # rolling shutter time
-            None, # exposure time
+            None,  # rolling shutter time
+            None,  # exposure time
             None,  # blur_samples
         )

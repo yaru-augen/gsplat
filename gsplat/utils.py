@@ -42,10 +42,10 @@ def map_gaussian_to_intersects(
     isect_ids, gaussian_ids = _C.map_gaussian_to_intersects(
         num_points,
         num_intersects,
-        xys.contiguous(),
-        depths.contiguous(),
-        radii.contiguous(),
-        cum_tiles_hit.contiguous(),
+        xys.contiguous().float(),
+        depths.contiguous().float(),
+        radii.contiguous().float(),
+        cum_tiles_hit.contiguous().float(),
         tile_bounds,
         block_size,
     )
@@ -78,11 +78,11 @@ def get_tile_bin_edges(
     """
     return _C.get_tile_bin_edges(
         num_intersects, isect_ids_sorted.contiguous(), tile_bounds
-    )
+    )  # (no float/half issue here, IDs are int)
 
 
 def compute_cov2d_bounds(
-    cov2d: Float[Tensor, "batch 3"]
+    cov2d: Float[Tensor, "batch 3"],
 ) -> Tuple[Float[Tensor, "batch_conics 3"], Float[Tensor, "batch_radii 1"]]:
     """Computes bounds of 2D covariance matrix
 
@@ -100,11 +100,11 @@ def compute_cov2d_bounds(
     ), f"Expected input cov2d to be of shape (*batch, 3) (upper triangular values), but got {tuple(cov2d.shape)}"
     num_pts = cov2d.shape[0]
     assert num_pts > 0
-    return _C.compute_cov2d_bounds(num_pts, cov2d.contiguous())
+    return _C.compute_cov2d_bounds(num_pts, cov2d.contiguous().float())
 
 
 def compute_cumulative_intersects(
-    num_tiles_hit: Float[Tensor, "batch 1"]
+    num_tiles_hit: Float[Tensor, "batch 1"],
 ) -> Tuple[int, Float[Tensor, "batch 1"]]:
     """Computes cumulative intersections of gaussians. This is useful for creating unique gaussian IDs and for sorting.
 

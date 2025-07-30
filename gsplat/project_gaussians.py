@@ -11,6 +11,7 @@ from torch.autograd import Function
 import gsplat.cuda as _C
 from gsplat._torch_impl import project_gaussians_forward as torch_project_gaussians
 
+
 def project_gaussians(
     means3d: Float[Tensor, "*batch 3"],
     scales: Float[Tensor, "*batch 3"],
@@ -81,7 +82,9 @@ def project_gaussians(
         use_torch = linear_velocity.requires_grad or angular_velocity.requires_grad
 
     if use_torch:
-        viewmat4x4 = torch.vstack([viewmat, torch.Tensor([[0, 0, 0, 1]]).to(viewmat)]).contiguous()
+        viewmat4x4 = torch.vstack(
+            [viewmat, torch.Tensor([[0, 0, 0, 1]]).to(viewmat)]
+        ).contiguous()
         (
             cov3d,
             _cov2d,
@@ -109,7 +112,16 @@ def project_gaussians(
             clip_thresh,
         )
 
-        return (xys, depths, pix_vels, radii, conics, compensation, num_tiles_hit, cov3d)
+        return (
+            xys,
+            depths,
+            pix_vels,
+            radii,
+            conics,
+            compensation,
+            num_tiles_hit,
+            cov3d,
+        )
 
     return _ProjectGaussians.apply(
         means3d.contiguous(),
@@ -171,15 +183,15 @@ class _ProjectGaussians(Function):
             num_tiles_hit,
         ) = _C.project_gaussians_forward(
             num_points,
-            means3d,
-            scales,
+            means3d.contiguous().float(),
+            scales.contiguous().float(),
             glob_scale,
-            quats,
+            quats.contiguous().float(),
             tuple(numpy.ravel(linear_velocity.detach().tolist())),
             tuple(numpy.ravel(angular_velocity.detach().tolist())),
             rolling_shutter_time,
             exposure_time,
-            viewmat,
+            viewmat.contiguous().float(),
             fx,
             fy,
             cx,
@@ -216,7 +228,16 @@ class _ProjectGaussians(Function):
             compensation,
         )
 
-        return (xys, depths, pix_vels, radii, conics, compensation, num_tiles_hit, cov3d)
+        return (
+            xys,
+            depths,
+            pix_vels,
+            radii,
+            conics,
+            compensation,
+            num_tiles_hit,
+            cov3d,
+        )
 
     @staticmethod
     def backward(
@@ -243,30 +264,30 @@ class _ProjectGaussians(Function):
 
         (v_cov2d, v_cov3d, v_mean3d, v_scale, v_quat) = _C.project_gaussians_backward(
             ctx.num_points,
-            means3d,
-            scales,
+            means3d.contiguous().float(),
+            scales.contiguous().float(),
             ctx.glob_scale,
-            quats,
+            quats.contiguous().float(),
             tuple(numpy.ravel(ctx.linear_velocity.tolist())),
             tuple(numpy.ravel(ctx.angular_velocity.tolist())),
             ctx.rolling_shutter_time,
             ctx.exposure_time,
-            viewmat,
+            viewmat.contiguous().float(),
             ctx.fx,
             ctx.fy,
             ctx.cx,
             ctx.cy,
             ctx.img_height,
             ctx.img_width,
-            cov3d,
-            radii,
-            conics,
-            compensation,
-            v_xys,
-            v_depths,
-            v_pix_vels,
-            v_conics,
-            v_compensation,
+            cov3d.contiguous().float(),
+            radii.contiguous().float(),
+            conics.contiguous().float(),
+            compensation.contiguous().float(),
+            v_xys.contiguous().float(),
+            v_depths.contiguous().float(),
+            v_pix_vels.contiguous().float(),
+            v_conics.contiguous().float(),
+            v_compensation.contiguous().float(),
         )
 
         if viewmat.requires_grad:
