@@ -1,12 +1,12 @@
 """Pure PyTorch implementations of various functions"""
 
 import struct
+from typing import Literal, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
 from jaxtyping import Float
 from torch import Tensor
-from typing import Tuple, Literal, Optional
 
 
 def compute_sh_color(
@@ -275,19 +275,28 @@ def project_cov3d_ewa(
         dim=-1,
     ).reshape(*rz.shape, 2, 3)
     T = torch.matmul(J, W)  # (..., 2, 3)
-    cov2d = torch.einsum("...ij,...jk,...kl->...il", T, cov3d[is_valid, ...], T.transpose(-1, -2))
+    cov2d = torch.einsum(
+        "...ij,...jk,...kl->...il", T, cov3d[is_valid, ...], T.transpose(-1, -2)
+    )
 
     # add a little blur along axes and (TODO save upper triangular elements)
     det_orig = cov2d[..., 0, 0] * cov2d[..., 1, 1] - cov2d[..., 0, 1] * cov2d[..., 0, 1]
     cov2d_blurred = cov2d * 1
     cov2d_blurred[..., 0, 0] = cov2d[..., 0, 0] + 0.3
     cov2d_blurred[..., 1, 1] = cov2d[..., 1, 1] + 0.3
-    det_blur = cov2d_blurred[..., 0, 0] * cov2d_blurred[..., 1, 1] - cov2d_blurred[..., 0, 1] * cov2d_blurred[..., 0, 1]
+    det_blur = (
+        cov2d_blurred[..., 0, 0] * cov2d_blurred[..., 1, 1]
+        - cov2d_blurred[..., 0, 1] * cov2d_blurred[..., 0, 1]
+    )
     # note: sqrt(x) is not differentiable at x=0
     compensation = torch.sqrt(torch.clamp(det_orig / det_blur, min=1e-10))
 
-    cov2d_all = torch.zeros(cov3d.shape[0], 2, 2, device=cov2d.device)
-    compensation_all = torch.zeros(cov3d.shape[0], device=cov2d.device)
+    cov2d_all = torch.zeros(
+        cov3d.shape[0], 2, 2, device=cov2d.device, dtype=cov2d_blurred.dtype
+    )
+    compensation_all = torch.zeros(
+        cov3d.shape[0], device=cov2d.device, dtype=compensation.dtype
+    )
 
     cov2d_all[is_valid, ...] = cov2d_blurred
     compensation_all[is_valid] = compensation
