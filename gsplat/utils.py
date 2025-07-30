@@ -15,7 +15,7 @@ def map_gaussian_to_intersects(
     xys: Float[Tensor, "batch 2"],
     depths: Float[Tensor, "batch 1"],
     radii: Float[Tensor, "batch 1"],
-    cum_tiles_hit: Float[Tensor, "batch 1"],
+    cum_tiles_hit: Int[Tensor, "batch 1"],
     tile_bounds: Tuple[int, int, int],
     block_size: int,
 ) -> Tuple[Float[Tensor, "cum_tiles_hit 1"], Float[Tensor, "cum_tiles_hit 1"]]:
@@ -45,7 +45,7 @@ def map_gaussian_to_intersects(
         xys.contiguous().float(),
         depths.contiguous().float(),
         radii.contiguous().float(),
-        cum_tiles_hit.contiguous().float(),
+        cum_tiles_hit.contiguous().to(torch.int32),
         tile_bounds,
         block_size,
     )
@@ -131,7 +131,7 @@ def bin_and_sort_gaussians(
     xys: Float[Tensor, "batch 2"],
     depths: Float[Tensor, "batch 1"],
     radii: Float[Tensor, "batch 1"],
-    cum_tiles_hit: Float[Tensor, "batch 1"],
+    cum_tiles_hit: Int[Tensor, "batch 1"],
     tile_bounds: Tuple[int, int, int],
     block_size: int,
 ) -> Tuple[
@@ -166,13 +166,14 @@ def bin_and_sort_gaussians(
         - **gaussian_ids_sorted** (Tensor): sorted Tensor that maps isect_ids back to cum_tiles_hit. Useful for identifying gaussians.
         - **tile_bins** (Tensor): range of gaussians hit per tile.
     """
+    # Ensure cum_tiles_hit is int32 for the call
     isect_ids, gaussian_ids = map_gaussian_to_intersects(
         num_points,
         num_intersects,
         xys,
         depths,
         radii,
-        cum_tiles_hit,
+        cum_tiles_hit.to(torch.int32),
         tile_bounds,
         block_size,
     )
