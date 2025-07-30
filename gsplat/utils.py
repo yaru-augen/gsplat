@@ -14,7 +14,7 @@ def map_gaussian_to_intersects(
     num_intersects: int,
     xys: Float[Tensor, "batch 2"],
     depths: Float[Tensor, "batch 1"],
-    radii: Float[Tensor, "batch 1"],
+    radii: Int[Tensor, "batch 1"],
     cum_tiles_hit: Int[Tensor, "batch 1"],
     tile_bounds: Tuple[int, int, int],
     block_size: int,
@@ -39,17 +39,27 @@ def map_gaussian_to_intersects(
         - **isect_ids** (Tensor): unique IDs for each gaussian in the form (tile | depth id).
         - **gaussian_ids** (Tensor): Tensor that maps isect_ids back to cum_tiles_hit.
     """
-    print("[DEBUG] xys dtype:", xys.dtype)
-    print("[DEBUG] depths dtype:", depths.dtype)
-    print("[DEBUG] radii dtype:", radii.dtype)
-    print("[DEBUG] cum_tiles_hit dtype:", cum_tiles_hit.dtype)
+
+    if xys.dtype != torch.float32:
+        print("[WARNING] xys is not float32, casting to float32.")
+        xys = xys.to(torch.float32)
+    if depths.dtype != torch.float32:
+        print("[WARNING] depths is not float32, casting to float32.")
+        depths = depths.to(torch.float32)
+    if radii.dtype != torch.int32:
+        print("[WARNING] radii is not int32, casting to int32.")
+        radii = radii.to(torch.int32)
+    if cum_tiles_hit.dtype != torch.int32:
+        print("[WARNING] cum_tiles_hit is not int32, casting to int32.")
+        cum_tiles_hit = cum_tiles_hit.to(torch.int32)
+
     isect_ids, gaussian_ids = _C.map_gaussian_to_intersects(
         num_points,
         num_intersects,
-        xys.contiguous().float(),
-        depths.contiguous().float(),
-        radii.contiguous().float(),
-        cum_tiles_hit.contiguous().to(torch.int32),
+        xys.contiguous(),
+        depths.contiguous(),
+        radii.contiguous(),
+        cum_tiles_hit.contiguous(),
         tile_bounds,
         block_size,
     )
