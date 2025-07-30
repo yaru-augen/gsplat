@@ -173,7 +173,7 @@ def bin_and_sort_gaussians(
         xys,
         depths,
         radii,
-        cum_tiles_hit.to(torch.int32),
+        cum_tiles_hit,
         tile_bounds,
         block_size,
     )
