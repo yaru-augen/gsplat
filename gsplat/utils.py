@@ -39,6 +39,10 @@ def map_gaussian_to_intersects(
         - **isect_ids** (Tensor): unique IDs for each gaussian in the form (tile | depth id).
         - **gaussian_ids** (Tensor): Tensor that maps isect_ids back to cum_tiles_hit.
     """
+    print("[DEBUG] xys dtype:", xys.dtype)
+    print("[DEBUG] depths dtype:", depths.dtype)
+    print("[DEBUG] radii dtype:", radii.dtype)
+    print("[DEBUG] cum_tiles_hit dtype:", cum_tiles_hit.dtype)
     isect_ids, gaussian_ids = _C.map_gaussian_to_intersects(
         num_points,
         num_intersects,
