@@ -24,6 +24,8 @@ def map_gaussian_to_intersects(
     Note:
         This function is not differentiable to any input.
 
+        ⚠️  It is best practice to ensure all input tensors have the correct dtype (xys: float32, depths: float32, radii: int32, cum_tiles_hit: int32) before calling this function. The dtype checks and conversions here are a safety net and should not be relied on for normal operation.
+
     Args:
         num_points (int): number of gaussians.
         num_intersects (int): total number of tile intersections.

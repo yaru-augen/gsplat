@@ -446,7 +446,7 @@ def project_gaussians_forward(
     mask = (tile_area > 0) & (~is_close) & det_valid
 
     num_tiles_hit = tile_area
-    depths = p_view[..., 2]
+    depths = p_view[..., 2].to(torch.float32)
     radii = radius.to(torch.int32)
 
     radii = torch.where(~mask, 0, radii)
